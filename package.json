@@ -1,0 +1,54 @@
+{
+    "name": "@paywatchglobal/n8n-nodes-azure-storage-plus",
+    "version": "0.1.0",
+    "description": "n8n community node for Azure Blob Storage with service principal auth, prefix filtering, and extended operations",
+    "license": "MIT",
+    "homepage": "",
+    "keywords": [
+        "n8n-community-node-package"
+    ],
+    "author": {
+        "name": "Asyrique Thevendran",
+        "email": "asyrique.thevendran@paywatchglobal.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/AzyriqueST/n8n-nodes-azure-storage-plus.git"
+    },
+   "scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+    "files": [
+        "dist"
+    ],
+    "n8n": {
+        "n8nNodesApiVersion": 1,
+        "strict": false,
+        "credentials": [
+            "dist/credentials/AzureBlobStoragePlusApi.credentials.js"
+        ],
+        "nodes": [
+            "dist/nodes/AzureStoragePlus/AzureStoragePlus.node.js"
+        ]
+    },
+    "dependencies": {
+        "xml2js": "^0.6.2"
+    },
+    "devDependencies": {
+        "@n8n/node-cli": "*",
+        "@types/xml2js": "^0.4.14",
+        "eslint": "9.32.0",
+        "prettier": "3.6.2",
+        "release-it": "^19.0.4",
+        "typescript": "5.9.2"
+    },
+    "peerDependencies": {
+        "n8n-workflow": "*"
+    }
+}

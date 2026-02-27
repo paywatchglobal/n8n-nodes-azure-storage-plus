@@ -1,0 +1,22 @@
+{
+	"node": "@paywatchglobal/n8n-nodes-azure-storage-plus",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Development", "Developer Tools"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://learn.microsoft.com/en-us/rest/api/storageservices/"
+			}
+		]
+	},
+	"alias": ["azure", "blob", "storage", "container", "microsoft"],
+	"subcategories": {
+		"Development": ["Cloud Infrastructure"]
+	}
+}
