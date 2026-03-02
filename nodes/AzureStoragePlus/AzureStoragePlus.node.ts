@@ -504,6 +504,7 @@ async function executeBlobGetAll(
 		this.getNodeParameter('container', i) as string,
 	);
 	const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+	const limit = returnAll ? 0 : (this.getNodeParameter('limit', i) as number);
 	const options = this.getNodeParameter('options', i, {}) as IDataObject;
 
 	const qs: IDataObject = {
@@ -523,22 +524,17 @@ async function executeBlobGetAll(
 		qs.include = (options.include as string[]).join(',');
 	}
 
-	if (returnAll) {
-		const blobs = await azureStorageApiRequestAllItems.call(
-			this,
-			`/${container}`,
-			qs,
-			async (xml: string) => {
-				const parsed = await parseBlobList(xml);
-				return { items: parsed.blobs, nextMarker: parsed.nextMarker };
-			},
-		);
-		for (const blob of blobs) {
-			returnData.push({ json: blob, pairedItem: { item: i } });
+	const nameFilter = options.nameFilter as string | undefined;
+	const nameMatchFn = nameFilter ? buildNameMatchFn(nameFilter) : null;
+
+	// Stream page-by-page: filter each page immediately, early-exit when limit reached
+	let collected = 0;
+	let nextMarker: string | undefined;
+
+	do {
+		if (nextMarker) {
+			qs.marker = nextMarker;
 		}
-	} else {
-		const limit = this.getNodeParameter('limit', i) as number;
-		qs.maxresults = limit;
 
 		const response = await azureStorageApiRequest.call(
 			this,
@@ -550,9 +546,33 @@ async function executeBlobGetAll(
 		const parsed = await parseBlobList(response.body as string);
 
 		for (const blob of parsed.blobs) {
+			if (nameMatchFn && !nameMatchFn(blob.name as string)) {
+				continue;
+			}
+
 			returnData.push({ json: blob, pairedItem: { item: i } });
+			collected++;
+
+			if (!returnAll && collected >= limit) {
+				return;
+			}
 		}
+
+		nextMarker = parsed.nextMarker;
+	} while (nextMarker);
+}
+
+const REGEX_METACHARACTERS = /[\\*+?^${}()[\]|]/;
+
+function buildNameMatchFn(filter: string): (name: string) => boolean {
+	if (REGEX_METACHARACTERS.test(filter)) {
+		// Contains regex syntax - use as regex
+		const regex = new RegExp(filter);
+		return (name) => regex.test(name);
 	}
+	// Plain text - case-insensitive substring search
+	const lower = filter.toLowerCase();
+	return (name) => name.toLowerCase().includes(lower);
 }
 
 async function executeBlobGetProperties(

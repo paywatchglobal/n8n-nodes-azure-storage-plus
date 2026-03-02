@@ -317,6 +317,15 @@ export const blobFields: INodeProperties[] = [
 					'Delimiter for virtual hierarchy (e.g. "/" to list only blobs at the current level)',
 			},
 			{
+				displayName: 'Name Filter',
+				name: 'nameFilter',
+				type: 'string',
+				default: '',
+				placeholder: 'e.g. report or .*report.*\\.pdf$',
+				description:
+					'Filter blob names. Plain text does a case-insensitive search; regex metacharacters (*, +, ^, $, etc.) activate regex mode. Use with Prefix for best performance.',
+			},
+			{
 				displayName: 'Include',
 				name: 'include',
 				type: 'multiOptions',

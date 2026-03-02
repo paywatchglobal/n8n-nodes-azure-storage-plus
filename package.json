@@ -13,7 +13,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/AzyriqueST/n8n-nodes-azure-storage-plus.git"
+        "url": "https://github.com/paywatchglobal/n8n-nodes-azure-storage-plus.git"
     },
    "scripts": {
 		"build": "n8n-node build",

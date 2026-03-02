@@ -16,9 +16,17 @@ import { firstCharLowerCase, parseBooleans, parseNumbers } from 'xml2js/lib/proc
 
 const XMS_VERSION = '2021-12-02';
 
+// Token cache - avoids re-fetching on every API call within the same execution
+let cachedToken: { token: string; expiresAt: number } | null = null;
+
 async function getAccessToken(
 	context: IExecuteFunctions | ILoadOptionsFunctions,
 ): Promise<string> {
+	// Return cached token if still valid (with 5-minute buffer)
+	if (cachedToken && Date.now() < cachedToken.expiresAt - 5 * 60 * 1000) {
+		return cachedToken.token;
+	}
+
 	const credentials =
 		(await context.getCredentials('azureBlobStoragePlusApi')) as ICredentialDataDecryptedObject;
 	const { tenantId, clientId, clientSecret } = credentials as {
@@ -39,7 +47,12 @@ async function getAccessToken(
 		url: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 		body,
-	})) as { access_token: string };
+	})) as { access_token: string; expires_in: number };
+
+	cachedToken = {
+		token: response.access_token,
+		expiresAt: Date.now() + response.expires_in * 1000,
+	};
 
 	return response.access_token;
 }
