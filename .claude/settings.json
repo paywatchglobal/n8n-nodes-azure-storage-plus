@@ -1,0 +1,16 @@
+{
+  "env": {
+    "MAX_THINKING_TOKENS": "63999"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(bun lint:*)",
+      "Bash(bunx tsc:*)",
+      "Bash(bunx biome check:*)",
+      "Bash(bun format:*)",
+      "Bash(grep:*)",
+      "Bash(bunx typecheck:*)",
+      "WebFetch(domain:docs.xendit.co)"
+    ]
+  }
+}
