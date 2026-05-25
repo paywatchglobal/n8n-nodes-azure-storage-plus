@@ -31,6 +31,12 @@ export const blobOperations: INodeProperties[] = [
 				action: 'Delete blob',
 			},
 			{
+				name: 'Generate SAS URL',
+				value: 'generateSasUrl',
+				description: 'Generate a time-limited shared-access-signature URL for a blob',
+				action: 'Generate SAS URL for blob',
+			},
+			{
 				name: 'Get',
 				value: 'get',
 				description: 'Download a blob',
@@ -408,6 +414,123 @@ export const blobFields: INodeProperties[] = [
 		displayOptions: { show: { resource: ['blob'], operation: ['copy'] } },
 		placeholder: 'e.g. folder/copy-of-file.pdf',
 		description: 'The name (path) for the copied blob',
+	},
+
+	// ========== Generate SAS URL ==========
+	{
+		...containerField,
+		displayOptions: { show: { resource: ['blob'], operation: ['generateSasUrl'] } },
+	},
+	{
+		...blobField,
+		displayOptions: { show: { resource: ['blob'], operation: ['generateSasUrl'] } },
+	},
+	{
+		displayName: 'Validity Duration',
+		name: 'validityDuration',
+		type: 'number',
+		typeOptions: { minValue: 1 },
+		default: 1,
+		required: true,
+		displayOptions: { show: { resource: ['blob'], operation: ['generateSasUrl'] } },
+		description: 'How long the SAS URL should remain valid. Maximum 7 days (Azure limit).',
+	},
+	{
+		displayName: 'Validity Unit',
+		name: 'validityUnit',
+		type: 'options',
+		default: 'hours',
+		required: true,
+		displayOptions: { show: { resource: ['blob'], operation: ['generateSasUrl'] } },
+		options: [
+			{ name: 'Minutes', value: 'minutes' },
+			{ name: 'Hours', value: 'hours' },
+			{ name: 'Days', value: 'days' },
+		],
+	},
+	{
+		displayName: 'Options',
+		name: 'options',
+		type: 'collection',
+		placeholder: 'Add Option',
+		default: {},
+		displayOptions: { show: { resource: ['blob'], operation: ['generateSasUrl'] } },
+		options: [
+			{
+				displayName: 'Expires At',
+				name: 'expiresAt',
+				type: 'dateTime',
+				default: '',
+				description:
+					'Overrides Validity Duration. Absolute expiry time (ISO 8601). Must be within 7 days from now.',
+			},
+			{
+				displayName: 'Permissions',
+				name: 'permissions',
+				type: 'multiOptions',
+				default: ['r'],
+				options: [
+					{ name: 'Add', value: 'a' },
+					{ name: 'Create', value: 'c' },
+					{ name: 'Delete', value: 'd' },
+					{ name: 'Delete Version', value: 'x' },
+					{ name: 'Execute', value: 'e' },
+					{ name: 'Move', value: 'm' },
+					{ name: 'Permanent Delete', value: 'y' },
+					{ name: 'Read', value: 'r' },
+					{ name: 'Tags', value: 't' },
+					{ name: 'Write', value: 'w' },
+				],
+				description: 'Which actions the SAS URL grants. Defaults to Read only.',
+			},
+			{
+				displayName: 'Response Cache-Control',
+				name: 'cacheControl',
+				type: 'string',
+				default: '',
+				placeholder: 'e.g. no-cache',
+				description: 'Override the Cache-Control response header when the SAS URL is opened',
+			},
+			{
+				displayName: 'Response Content-Disposition',
+				name: 'contentDisposition',
+				type: 'string',
+				default: '',
+				placeholder: 'e.g. attachment; filename="report.pdf"',
+				description:
+					'Override the Content-Disposition response header when the SAS URL is opened. Useful to force a download with a specific filename.',
+			},
+			{
+				displayName: 'Response Content-Encoding',
+				name: 'contentEncoding',
+				type: 'string',
+				default: '',
+				description: 'Override the Content-Encoding response header when the SAS URL is opened',
+			},
+			{
+				displayName: 'Response Content-Language',
+				name: 'contentLanguage',
+				type: 'string',
+				default: '',
+				description: 'Override the Content-Language response header when the SAS URL is opened',
+			},
+			{
+				displayName: 'Response Content-Type',
+				name: 'contentType',
+				type: 'string',
+				default: '',
+				placeholder: 'e.g. application/pdf',
+				description: 'Override the Content-Type response header when the SAS URL is opened',
+			},
+			{
+				displayName: 'Starts At',
+				name: 'startsAt',
+				type: 'dateTime',
+				default: '',
+				description:
+					'Optional. The SAS becomes valid only after this time (ISO 8601). Defaults to immediately.',
+			},
+		],
 	},
 
 	// ========== Set Tier ==========

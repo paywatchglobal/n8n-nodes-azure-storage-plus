@@ -16,6 +16,7 @@ import {
 	azureStorageApiRequestAllItems,
 	buildMetadataHeaders,
 	buildTagsQueryString,
+	generateBlobUserDelegationSas,
 	getBlobs,
 	getContainers,
 	parseBlobList,
@@ -167,6 +168,8 @@ export class AzureStoragePlus implements INodeType {
 						await executeBlobGetAll.call(this, i, returnData);
 					} else if (operation === 'getProperties') {
 						await executeBlobGetProperties.call(this, i, returnData);
+					} else if (operation === 'generateSasUrl') {
+						await executeBlobGenerateSasUrl.call(this, i, returnData);
 					} else if (operation === 'copy') {
 						await executeBlobCopy.call(this, i, returnData);
 					} else if (operation === 'setTier') {
@@ -729,6 +732,50 @@ async function executeBlobSetMetadata(
 			metadata: metadataObj,
 			...parseHeaders(response.headers),
 		},
+		pairedItem: { item: i },
+	});
+}
+
+async function executeBlobGenerateSasUrl(
+	this: IExecuteFunctions,
+	i: number,
+	returnData: INodeExecutionData[],
+) {
+	const container = resolveResourceLocator(
+		this.getNodeParameter('container', i) as string,
+	);
+	const blob = resolveResourceLocator(this.getNodeParameter('blob', i) as string);
+	const validityDuration = this.getNodeParameter('validityDuration', i) as number;
+	const validityUnit = this.getNodeParameter('validityUnit', i) as
+		| 'minutes'
+		| 'hours'
+		| 'days';
+	const options = this.getNodeParameter('options', i, {}) as IDataObject;
+
+	const unitMs = { minutes: 60_000, hours: 3_600_000, days: 86_400_000 }[validityUnit];
+
+	const startsOn = options.startsAt ? new Date(options.startsAt as string) : undefined;
+	const baseTime = startsOn?.getTime() ?? Date.now();
+	const expiresOn = options.expiresAt
+		? new Date(options.expiresAt as string)
+		: new Date(baseTime + validityDuration * unitMs);
+
+	const permissionsArr = (options.permissions as string[] | undefined) ?? ['r'];
+	const permissions = permissionsArr.join('');
+
+	const result = await generateBlobUserDelegationSas.call(this, container, blob, {
+		permissions,
+		expiresOn,
+		startsOn,
+		cacheControl: options.cacheControl as string | undefined,
+		contentDisposition: options.contentDisposition as string | undefined,
+		contentEncoding: options.contentEncoding as string | undefined,
+		contentLanguage: options.contentLanguage as string | undefined,
+		contentType: options.contentType as string | undefined,
+	});
+
+	returnData.push({
+		json: { ...result },
 		pairedItem: { item: i },
 	});
 }
