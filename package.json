@@ -15,13 +15,13 @@
         "type": "git",
         "url": "https://github.com/paywatchglobal/n8n-nodes-azure-storage-plus.git"
     },
-   "scripts": {
-		"build": "n8n-node build",
-		"build:watch": "tsc --watch",
-		"dev": "n8n-node dev",
-		"lint": "n8n-node lint",
-		"lint:fix": "n8n-node lint --fix"
-	},
+    "scripts": {
+        "build": "n8n-node build",
+        "build:watch": "tsc --watch",
+        "dev": "n8n-node dev",
+        "lint": "n8n-node lint",
+        "lint:fix": "n8n-node lint --fix"
+    },
     "files": [
         "dist"
     ],
@@ -39,12 +39,12 @@
         "xml2js": "^0.6.2"
     },
     "devDependencies": {
-        "@n8n/node-cli": "*",
+        "@n8n/node-cli": "^0.31.0",
         "@types/xml2js": "^0.4.14",
-        "eslint": "9.32.0",
-        "prettier": "3.6.2",
-        "release-it": "^19.0.4",
-        "typescript": "5.9.2"
+        "eslint": "9.39.4",
+        "prettier": "3.8.3",
+        "release-it": "^20.0.1",
+        "typescript": "5.9.3"
     },
     "peerDependencies": {
         "n8n-workflow": "*"

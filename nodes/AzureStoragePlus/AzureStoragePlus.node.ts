@@ -9,13 +9,14 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import {
 	azureStorageApiRequest,
 	azureStorageApiRequestAllItems,
 	buildMetadataHeaders,
 	buildTagsQueryString,
+	generateBlobUserDelegationSas,
 	getBlobs,
 	getContainers,
 	parseBlobList,
@@ -167,6 +168,8 @@ export class AzureStoragePlus implements INodeType {
 						await executeBlobGetAll.call(this, i, returnData);
 					} else if (operation === 'getProperties') {
 						await executeBlobGetProperties.call(this, i, returnData);
+					} else if (operation === 'generateSasUrl') {
+						await executeBlobGenerateSasUrl.call(this, i, returnData);
 					} else if (operation === 'copy') {
 						await executeBlobCopy.call(this, i, returnData);
 					} else if (operation === 'setTier') {
@@ -185,7 +188,12 @@ export class AzureStoragePlus implements INodeType {
 					});
 					continue;
 				}
-				throw error;
+				if (error instanceof NodeApiError || error instanceof NodeOperationError) {
+					throw error;
+				}
+				throw new NodeOperationError(this.getNode(), error as Error, {
+					itemIndex: i,
+				});
 			}
 		}
 
@@ -731,6 +739,83 @@ async function executeBlobSetMetadata(
 		},
 		pairedItem: { item: i },
 	});
+}
+
+async function executeBlobGenerateSasUrl(
+	this: IExecuteFunctions,
+	i: number,
+	returnData: INodeExecutionData[],
+) {
+	const container = resolveResourceLocator(
+		this.getNodeParameter('container', i) as string,
+	);
+	const blob = resolveResourceLocator(this.getNodeParameter('blob', i) as string);
+	const validityDuration = this.getNodeParameter('validityDuration', i) as number;
+	const validityUnit = this.getNodeParameter('validityUnit', i) as string;
+	const options = this.getNodeParameter('options', i, {}) as IDataObject;
+
+	const UNIT_MS: Record<string, number> = {
+		minutes: 60_000,
+		hours: 3_600_000,
+		days: 86_400_000,
+	};
+	const unitMs = UNIT_MS[validityUnit];
+	if (unitMs === undefined) {
+		throw new NodeOperationError(
+			this.getNode(),
+			`Unsupported Validity Unit: ${validityUnit}`,
+			{ itemIndex: i },
+		);
+	}
+
+	const startsOn = parseOptionalDate.call(this, options.startsAt, 'Starts At', i);
+	const expiresAtOverride = parseOptionalDate.call(
+		this,
+		options.expiresAt,
+		'Expires At',
+		i,
+	);
+
+	const baseTime = startsOn?.getTime() ?? Date.now();
+	const expiresOn =
+		expiresAtOverride ?? new Date(baseTime + validityDuration * unitMs);
+
+	const permissionsArr = (options.permissions as string[] | undefined) ?? [];
+	const permissions = permissionsArr.length > 0 ? permissionsArr.join('') : 'r';
+
+	const result = await generateBlobUserDelegationSas.call(this, container, blob, {
+		permissions,
+		expiresOn,
+		startsOn,
+		cacheControl: options.cacheControl as string | undefined,
+		contentDisposition: options.contentDisposition as string | undefined,
+		contentEncoding: options.contentEncoding as string | undefined,
+		contentLanguage: options.contentLanguage as string | undefined,
+		contentType: options.contentType as string | undefined,
+	});
+
+	returnData.push({
+		json: { ...result },
+		pairedItem: { item: i },
+	});
+}
+
+function parseOptionalDate(
+	this: IExecuteFunctions,
+	value: unknown,
+	fieldName: string,
+	itemIndex: number,
+): Date | undefined {
+	if (value === undefined || value === null || value === '') return undefined;
+	const date = new Date(value as string);
+	if (Number.isNaN(date.getTime())) {
+		throw new NodeOperationError(
+			this.getNode(),
+			`Invalid ${fieldName}: ${String(value)}`,
+			{ itemIndex },
+		);
+	}
+	return date;
 }
 
 async function executeBlobUndelete(
