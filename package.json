@@ -1,6 +1,6 @@
 {
     "name": "@paywatchglobal/n8n-nodes-azure-storage-plus",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "n8n community node for Azure Blob Storage with service principal auth, prefix filtering, and extended operations",
     "license": "MIT",
     "homepage": "",
