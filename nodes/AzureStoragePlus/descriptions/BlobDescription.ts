@@ -481,7 +481,8 @@ export const blobFields: INodeProperties[] = [
 					{ name: 'Tags', value: 't' },
 					{ name: 'Write', value: 'w' },
 				],
-				description: 'Which actions the SAS URL grants. Defaults to Read only.',
+				description:
+					'Which actions the SAS URL grants. Defaults to Read only if not added or left empty.',
 			},
 			{
 				displayName: 'Response Cache-Control',

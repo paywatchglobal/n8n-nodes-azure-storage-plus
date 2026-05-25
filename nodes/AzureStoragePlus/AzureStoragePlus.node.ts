@@ -9,7 +9,7 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import {
 	azureStorageApiRequest,
@@ -746,22 +746,37 @@ async function executeBlobGenerateSasUrl(
 	);
 	const blob = resolveResourceLocator(this.getNodeParameter('blob', i) as string);
 	const validityDuration = this.getNodeParameter('validityDuration', i) as number;
-	const validityUnit = this.getNodeParameter('validityUnit', i) as
-		| 'minutes'
-		| 'hours'
-		| 'days';
+	const validityUnit = this.getNodeParameter('validityUnit', i) as string;
 	const options = this.getNodeParameter('options', i, {}) as IDataObject;
 
-	const unitMs = { minutes: 60_000, hours: 3_600_000, days: 86_400_000 }[validityUnit];
+	const UNIT_MS: Record<string, number> = {
+		minutes: 60_000,
+		hours: 3_600_000,
+		days: 86_400_000,
+	};
+	const unitMs = UNIT_MS[validityUnit];
+	if (unitMs === undefined) {
+		throw new NodeOperationError(
+			this.getNode(),
+			`Unsupported Validity Unit: ${validityUnit}`,
+			{ itemIndex: i },
+		);
+	}
 
-	const startsOn = options.startsAt ? new Date(options.startsAt as string) : undefined;
+	const startsOn = parseOptionalDate.call(this, options.startsAt, 'Starts At', i);
+	const expiresAtOverride = parseOptionalDate.call(
+		this,
+		options.expiresAt,
+		'Expires At',
+		i,
+	);
+
 	const baseTime = startsOn?.getTime() ?? Date.now();
-	const expiresOn = options.expiresAt
-		? new Date(options.expiresAt as string)
-		: new Date(baseTime + validityDuration * unitMs);
+	const expiresOn =
+		expiresAtOverride ?? new Date(baseTime + validityDuration * unitMs);
 
-	const permissionsArr = (options.permissions as string[] | undefined) ?? ['r'];
-	const permissions = permissionsArr.join('');
+	const permissionsArr = (options.permissions as string[] | undefined) ?? [];
+	const permissions = permissionsArr.length > 0 ? permissionsArr.join('') : 'r';
 
 	const result = await generateBlobUserDelegationSas.call(this, container, blob, {
 		permissions,
@@ -778,6 +793,24 @@ async function executeBlobGenerateSasUrl(
 		json: { ...result },
 		pairedItem: { item: i },
 	});
+}
+
+function parseOptionalDate(
+	this: IExecuteFunctions,
+	value: unknown,
+	fieldName: string,
+	itemIndex: number,
+): Date | undefined {
+	if (value === undefined || value === null || value === '') return undefined;
+	const date = new Date(value as string);
+	if (Number.isNaN(date.getTime())) {
+		throw new NodeOperationError(
+			this.getNode(),
+			`Invalid ${fieldName}: ${String(value)}`,
+			{ itemIndex },
+		);
+	}
+	return date;
 }
 
 async function executeBlobUndelete(
