@@ -9,7 +9,7 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 import {
 	azureStorageApiRequest,
@@ -188,7 +188,12 @@ export class AzureStoragePlus implements INodeType {
 					});
 					continue;
 				}
-				throw error;
+				if (error instanceof NodeApiError || error instanceof NodeOperationError) {
+					throw error;
+				}
+				throw new NodeOperationError(this.getNode(), error as Error, {
+					itemIndex: i,
+				});
 			}
 		}
 

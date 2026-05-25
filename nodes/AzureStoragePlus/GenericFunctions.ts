@@ -103,6 +103,11 @@ export async function azureStorageApiRequest(
 	}
 
 	try {
+		// httpRequestWithAuthentication would require declaring an authenticate() method
+		// on the credential, but Microsoft Entra client-credentials with token caching is
+		// not expressible through the built-in OAuth2 flows without redesigning the
+		// credential class — keeping manual auth here.
+		// eslint-disable-next-line @n8n/community-nodes/no-http-request-with-manual-auth
 		const response = (await this.helpers.httpRequest(options)) as {
 			body: string | Buffer;
 			headers: IDataObject;
@@ -606,6 +611,8 @@ async function getUserDelegationKey(
 		`<Expiry>${toIsoSeconds(expiry)}</Expiry></KeyInfo>`;
 
 	try {
+		// See note above on manual auth — same constraint applies here.
+		// eslint-disable-next-line @n8n/community-nodes/no-http-request-with-manual-auth
 		const response = (await this.helpers.httpRequest({
 			method: 'POST',
 			url: `${storageAccountUrl}/?restype=service&comp=userdelegationkey`,
